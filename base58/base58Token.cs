@@ -5,12 +5,9 @@ using System.Text;
 
 namespace base58namespace
 {
-    public class base58Token
+    public static class base58Token
     {
-        public base58Token()
-        {
-        }
-
+       
         public static readonly string alphabet = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
         public static readonly BigInteger BigRadix10 = BigInteger.Pow(58, 10);
         public static readonly char AlphabetIdx0 = '1';
@@ -66,7 +63,7 @@ namespace base58namespace
             255, 255, 255, 255, 255, 255, 255, 255,
         };
 
-        public string Encode(byte[] bytes)
+        public static string Encode(byte[] bytes)
         {
             BigInteger x = new BigInteger(bytes, isBigEndian: true);
             List<byte> answer = new List<byte>();
@@ -105,7 +102,7 @@ namespace base58namespace
             return (Encoding.UTF8.GetString(answer.ToArray()));
         }
 
-        public byte[] Decode(string b)
+        public static byte[] Decode(string b)
         {
             var answer = BigInteger.Zero;
             BigInteger scratch;
