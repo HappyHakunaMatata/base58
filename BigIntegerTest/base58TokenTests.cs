@@ -19,14 +19,11 @@ public class base58TokenTests
             ExpectedOutput = expectedOutput;
         }
     }
-
-    base58Token token { get; set; }
     ITestOutputHelper _testOutputHelper { get; set; }
 
     public base58TokenTests(ITestOutputHelper testOutputHelper)
     {
         _testOutputHelper = testOutputHelper;
-        token = new();
     }
 
 
@@ -49,7 +46,7 @@ public class base58TokenTests
         };
         foreach (var i in stringTests)
         {
-            var result = token.Encode(Encoding.UTF8.GetBytes(i.Input));
+            var result = base58Token.Encode(Encoding.UTF8.GetBytes(i.Input));
             _testOutputHelper.WriteLine($"{result}, {i.ExpectedOutput}");
             Assert.True(result == i.ExpectedOutput);
         }
@@ -75,7 +72,7 @@ public class base58TokenTests
         };
         foreach (var i in invalidStringTests)
         {
-            var result = token.Decode(i.Input);
+            var result = base58Token.Decode(i.Input);
             _testOutputHelper.WriteLine($"{Encoding.UTF8.GetString(result)}, {i.ExpectedOutput}");
             Assert.True(Encoding.UTF8.GetString(result) == i.ExpectedOutput);
         }
@@ -103,7 +100,7 @@ public class base58TokenTests
         };
         foreach (var i in hexTests)
         {
-            var result = token.Decode(i.ExpectedOutput);
+            var result = base58Token.Decode(i.ExpectedOutput);
             var hexbyte = Convert.FromHexString(i.Input);
             _testOutputHelper.WriteLine($"{BitConverter.ToString(result)}, {BitConverter.ToString(hexbyte)}");
             Assert.True(BitConverter.ToString(result) == BitConverter.ToString(hexbyte));

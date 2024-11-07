@@ -7,24 +7,23 @@ namespace base58namespace
 {
     public static class base58Token
     {
-       
         public static readonly string alphabet = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
-        public static readonly BigInteger BigRadix10 = BigInteger.Pow(58, 10);
+        public static readonly BigInteger BigRadix10 = new BigInteger(430804206899405824);
         public static readonly char AlphabetIdx0 = '1';
 
         public static BigInteger[] bigRadix = new BigInteger[]
         {
             new BigInteger(0),
             new BigInteger(58),
-            BigInteger.Pow(58, 2),
-            BigInteger.Pow(58, 3),
-            BigInteger.Pow(58, 4),
-            BigInteger.Pow(58, 5),
-            BigInteger.Pow(58, 6),
-            BigInteger.Pow(58, 7),
-            BigInteger.Pow(58, 8),
-            BigInteger.Pow(58, 9),
-            BigInteger.Pow(58, 10)
+            new BigInteger(3364),              //BigInteger.Pow(58, 2)
+            new BigInteger(195112),            //BigInteger.Pow(58, 3)
+            new BigInteger(11316496),          //BigInteger.Pow(58, 4)
+            new BigInteger(656356768),         //BigInteger.Pow(58, 5)
+            new BigInteger(38068692544),       //BigInteger.Pow(58, 6)
+            new BigInteger(2207984167552),     //BigInteger.Pow(58, 7)
+            new BigInteger(128063081718016),   //BigInteger.Pow(58, 8)
+            new BigInteger(7427658739644928),  //BigInteger.Pow(58, 9)
+            new BigInteger(430804206899405824) //BigInteger.Pow(58, 10)
         };
 
         public static byte[] b58 = new byte[256]
@@ -76,6 +75,7 @@ namespace base58namespace
                     nint m = (nint)mod;
                     while (m > 0)
                     {
+
                         answer.Add((byte)alphabet[(int)(m % 58)]);
                         m /= 58;
                     }
@@ -96,10 +96,10 @@ namespace base58namespace
                 {
                     break;
                 }
-                answer.Append((byte)AlphabetIdx0);
+                answer.Add((byte)AlphabetIdx0);
             }
             answer.Reverse();
-            return (Encoding.UTF8.GetString(answer.ToArray()));
+            return Encoding.UTF8.GetString(answer.ToArray());
         }
 
         public static byte[] Decode(string b)
@@ -151,8 +151,6 @@ namespace base58namespace
             Array.Copy(tmpval, 0, val, numZeros, tmpval.Length);
             return val;
         }
-
-        
     }
 
 }

@@ -1,5 +1,6 @@
 ﻿
 using System.Collections;
+using System.Net.Sockets;
 using System.Numerics;
 using base58namespace;
 

@@ -5,7 +5,7 @@ using static System.Runtime.InteropServices.JavaScript.JSType;
 public class Programm
 {
 
-    public static void Main(string[] args)
+    public static void Main()
     {
         List<byte[]> datab = new();
         FullFill(datab);
