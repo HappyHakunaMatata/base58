@@ -1,6 +1,4 @@
 ﻿using System.Numerics;
-using System.Runtime.InteropServices;
-using System.Text;
 
 namespace base58namespace
 {
@@ -64,17 +62,19 @@ namespace base58namespace
         public static string Encode(byte[] bytes)
         {
             BigInteger x = new(bytes, isUnsigned: true, isBigEndian: true);
-            List<byte> answer = [];
-            BigInteger mod = new();
+            int size = bytes.Length * 138 / 100 + 1;
+            Span<char> answer = size <= 256 ? stackalloc char[size] : new char[size];
+            int pos = size;
+
             while (x.Sign > 0)
             {
-                x = BigInteger.DivRem(x, BigRadix10, out mod);
+                x = BigInteger.DivRem(x, BigRadix10, out BigInteger mod);
                 if (x.Sign == 0)
                 {
                     nint m = (nint)mod;
                     while (m > 0)
                     {
-                        answer.Add((byte)alphabet[(int)(m % 58)]);
+                        answer[--pos] = alphabet[(int)(m % 58)];
                         m /= 58;
                     }
                 }
@@ -83,7 +83,7 @@ namespace base58namespace
                     nint m = (nint)mod;
                     for (int i = 0; i < 10; i++)
                     {
-                        answer.Add((byte)alphabet[(int)(m % 58)]);
+                        answer[--pos] = alphabet[(int)(m % 58)];
                         m /= 58;
                     }
                 }
@@ -91,10 +91,9 @@ namespace base58namespace
             for (var i = 0; i < bytes.Length; i++)
             {
                 if (bytes[i] != 0) break;
-                answer.Add((byte)AlphabetIdx0);
+                answer[--pos] = AlphabetIdx0;
             }
-            answer.Reverse();
-            return Encoding.UTF8.GetString(CollectionsMarshal.AsSpan(answer));
+            return new string(answer[pos..]);
         }
 
         public static byte[] Decode(string b)
