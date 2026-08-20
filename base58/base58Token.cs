@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections;
-using System.Numerics;
+﻿using System.Numerics;
 using System.Runtime.InteropServices;
 using System.Text;
 
@@ -9,26 +7,26 @@ namespace base58namespace
     public static class base58Token
     {
         public static readonly string alphabet = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
-        public static readonly BigInteger BigRadix10 = new BigInteger(430804206899405824);
+        public static readonly BigInteger BigRadix10 = new(430804206899405824);
         public static readonly char AlphabetIdx0 = '1';
 
-        public static BigInteger[] bigRadix = new BigInteger[]
-        {
-            new BigInteger(0),
-            new BigInteger(58),
-            new BigInteger(3364),              //BigInteger.Pow(58, 2)
-            new BigInteger(195112),            //BigInteger.Pow(58, 3)
-            new BigInteger(11316496),          //BigInteger.Pow(58, 4)
-            new BigInteger(656356768),         //BigInteger.Pow(58, 5)
-            new BigInteger(38068692544),       //BigInteger.Pow(58, 6)
-            new BigInteger(2207984167552),     //BigInteger.Pow(58, 7)
-            new BigInteger(128063081718016),   //BigInteger.Pow(58, 8)
-            new BigInteger(7427658739644928),  //BigInteger.Pow(58, 9)
-            new BigInteger(430804206899405824) //BigInteger.Pow(58, 10)
-        };
+        private static readonly BigInteger[] bigRadix =
+        [
+            0,
+            58,
+            3364,              //BigInteger.Pow(58, 2)
+            195112,            //BigInteger.Pow(58, 3)
+            11316496,          //BigInteger.Pow(58, 4)
+            656356768,         //BigInteger.Pow(58, 5)
+            38068692544,       //BigInteger.Pow(58, 6)
+            2207984167552,     //BigInteger.Pow(58, 7)
+            128063081718016,   //BigInteger.Pow(58, 8)
+            7427658739644928,  //BigInteger.Pow(58, 9)
+            430804206899405824 //BigInteger.Pow(58, 10)
+        ];
 
-        public static byte[] b58 = new byte[256]
-        {
+        private static readonly byte[] b58 =
+        [
             255, 255, 255, 255, 255, 255, 255, 255,
             255, 255, 255, 255, 255, 255, 255, 255,
             255, 255, 255, 255, 255, 255, 255, 255,
@@ -61,13 +59,13 @@ namespace base58namespace
             255, 255, 255, 255, 255, 255, 255, 255,
             255, 255, 255, 255, 255, 255, 255, 255,
             255, 255, 255, 255, 255, 255, 255, 255,
-        };
+        ];
 
         public static string Encode(byte[] bytes)
         {
-            BigInteger x = new BigInteger(bytes, isUnsigned: true, isBigEndian: true);
-            List<byte> answer = new List<byte>();
-            BigInteger mod = new BigInteger();
+            BigInteger x = new(bytes, isUnsigned: true, isBigEndian: true);
+            List<byte> answer = [];
+            BigInteger mod = new();
             while (x.Sign > 0)
             {
                 x = BigInteger.DivRem(x, BigRadix10, out mod);
@@ -120,8 +118,7 @@ namespace base58namespace
                     var tmp = b58[t[k]];
                     if (tmp == 255)
                     {
-                        
-                        return new byte[0];
+                        return [];
                     }
                     total = total * 58 + (nuint)tmp;
                 }
@@ -131,14 +128,14 @@ namespace base58namespace
                 t = t[n..];
             }
 
-            // isUnsigned leaves out the sign byte, so there is no leading zero to strip.
+            
             int byteCount = answer.IsZero ? 0 : answer.GetByteCount(isUnsigned: true);
             Span<byte> scratch2 = stackalloc byte[256];
             if (byteCount > scratch2.Length)
             {
                 scratch2 = new byte[byteCount];
             }
-            Span<byte> tmpval = scratch2.Slice(0, byteCount);
+            Span<byte> tmpval = scratch2[..byteCount];
             if (byteCount > 0)
             {
                 answer.TryWriteBytes(tmpval, out _, isUnsigned: true, isBigEndian: true);
@@ -147,10 +144,7 @@ namespace base58namespace
             int numZeros = 0;
             while (numZeros < b.Length)
             {
-                if (b[numZeros] != AlphabetIdx0)
-                {
-                    break;
-                }
+                if (b[numZeros] != AlphabetIdx0) break;
                 numZeros += 1;
             }
 
