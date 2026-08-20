@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Numerics;
 using System.Text;
-using base58namespace;
+using Base58namespace;
 using Xunit;
 using Xunit.Abstractions;
 using Xunit.Sdk;
@@ -46,7 +46,7 @@ public class base58TokenTests
         };
         foreach (var i in stringTests)
         {
-            var result = base58Token.Encode(Encoding.UTF8.GetBytes(i.Input));
+            var result = Base58Token.Encode(Encoding.UTF8.GetBytes(i.Input));
             _testOutputHelper.WriteLine($"{result}, {i.ExpectedOutput}");
             Assert.True(result == i.ExpectedOutput);
         }
@@ -72,7 +72,7 @@ public class base58TokenTests
         };
         foreach (var i in invalidStringTests)
         {
-            var result = base58Token.Decode(i.Input);
+            var result = Base58Token.Decode(i.Input);
             _testOutputHelper.WriteLine($"{Encoding.UTF8.GetString(result)}, {i.ExpectedOutput}");
             Assert.True(Encoding.UTF8.GetString(result) == i.ExpectedOutput);
         }
@@ -100,7 +100,7 @@ public class base58TokenTests
         };
         foreach (var i in hexTests)
         {
-            var result = base58Token.Decode(i.ExpectedOutput);
+            var result = Base58Token.Decode(i.ExpectedOutput);
             var hexbyte = Convert.FromHexString(i.Input);
             _testOutputHelper.WriteLine($"{BitConverter.ToString(result)}, {BitConverter.ToString(hexbyte)}");
             Assert.True(BitConverter.ToString(result) == BitConverter.ToString(hexbyte));

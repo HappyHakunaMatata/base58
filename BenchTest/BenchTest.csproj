@@ -8,7 +8,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\base58\base58.csproj" />
+    <ProjectReference Include="..\Base58\base58.csproj" />
   </ItemGroup>
 
   <ItemGroup>

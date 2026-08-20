@@ -1,6 +1,6 @@
 using System.Numerics;
 using System.Text;
-using base58namespace;
+using Base58namespace;
 using BenchmarkDotNet.Attributes;
 using BenchmarkDotNet.Running;
 
@@ -27,23 +27,23 @@ public class Base58Benchmarks
         Random random = new Random(42);
         _bytes = new byte[Size];
         random.NextBytes(_bytes);
-        _text = base58Token.Encode(_bytes);
+        _text = Base58Token.Encode(_bytes);
 
         // A round trip has to give the input back, otherwise the timings measure broken work.
-        if (!base58Token.Decode(_text).SequenceEqual(_bytes))
+        if (!Base58Token.Decode(_text).SequenceEqual(_bytes))
         {
             throw new InvalidOperationException($"round trip mismatch for {_text}");
         }
     }
 
     [Benchmark]
-    public string Encode() => base58Token.Encode(_bytes);
+    public string Encode() => Base58Token.Encode(_bytes);
 
     [Benchmark]
-    public byte[] Decode() => base58Token.Decode(_text);
+    public byte[] Decode() => Base58Token.Decode(_text);
 }
 
-// base58Token.Encode (stack buffer of chars, filled back to front) against the two
+// Base58Token.Encode (stack buffer of chars, filled back to front) against the two
 // collection-based shapes it replaced.
 [MemoryDiagnoser]
 public class EncodeVariants
@@ -69,7 +69,7 @@ public class EncodeVariants
             {
                 probe[i] = 0;
             }
-            string current = base58Token.Encode(probe);
+            string current = Base58Token.Encode(probe);
             string list = EncodeListReverse(probe);
             string linked = EncodeLinkedList(probe);
             if (current != list || current != linked)
@@ -81,7 +81,7 @@ public class EncodeVariants
     }
 
     [Benchmark(Baseline = true)]
-    public string Current() => base58Token.Encode(_bytes);
+    public string Current() => Base58Token.Encode(_bytes);
 
     [Benchmark]
     public string ListReverse() => EncodeListReverse(_bytes);
@@ -97,13 +97,13 @@ public class EncodeVariants
         BigInteger mod = new();
         while (x.Sign > 0)
         {
-            x = BigInteger.DivRem(x, base58Token.BigRadix10, out mod);
+            x = BigInteger.DivRem(x, Base58Token.BigRadix10, out mod);
             if (x.Sign == 0)
             {
                 nint m = (nint)mod;
                 while (m > 0)
                 {
-                    answer.Add((byte)base58Token.alphabet[(int)(m % 58)]);
+                    answer.Add((byte)Base58Token.alphabet[(int)(m % 58)]);
                     m /= 58;
                 }
             }
@@ -112,7 +112,7 @@ public class EncodeVariants
                 nint m = (nint)mod;
                 for (int i = 0; i < 10; i++)
                 {
-                    answer.Add((byte)base58Token.alphabet[(int)(m % 58)]);
+                    answer.Add((byte)Base58Token.alphabet[(int)(m % 58)]);
                     m /= 58;
                 }
             }
@@ -123,7 +123,7 @@ public class EncodeVariants
             {
                 break;
             }
-            answer.Add((byte)base58Token.AlphabetIdx0);
+            answer.Add((byte)Base58Token.AlphabetIdx0);
         }
         answer.Reverse();
         return Encoding.UTF8.GetString(System.Runtime.InteropServices.CollectionsMarshal.AsSpan(answer));
@@ -138,13 +138,13 @@ public class EncodeVariants
         BigInteger mod = new();
         while (x.Sign > 0)
         {
-            x = BigInteger.DivRem(x, base58Token.BigRadix10, out mod);
+            x = BigInteger.DivRem(x, Base58Token.BigRadix10, out mod);
             if (x.Sign == 0)
             {
                 nint m = (nint)mod;
                 while (m > 0)
                 {
-                    answer.AddFirst((byte)base58Token.alphabet[(int)(m % 58)]);
+                    answer.AddFirst((byte)Base58Token.alphabet[(int)(m % 58)]);
                     m /= 58;
                 }
             }
@@ -153,7 +153,7 @@ public class EncodeVariants
                 nint m = (nint)mod;
                 for (int i = 0; i < 10; i++)
                 {
-                    answer.AddFirst((byte)base58Token.alphabet[(int)(m % 58)]);
+                    answer.AddFirst((byte)Base58Token.alphabet[(int)(m % 58)]);
                     m /= 58;
                 }
             }
@@ -164,7 +164,7 @@ public class EncodeVariants
             {
                 break;
             }
-            answer.AddFirst((byte)base58Token.AlphabetIdx0);
+            answer.AddFirst((byte)Base58Token.AlphabetIdx0);
         }
         byte[] flat = new byte[answer.Count];
         answer.CopyTo(flat, 0);
