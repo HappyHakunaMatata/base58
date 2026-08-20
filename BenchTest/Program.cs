@@ -1,86 +1,42 @@
-﻿using base58namespace;
-using System.Diagnostics;
-using static System.Runtime.InteropServices.JavaScript.JSType;
+using base58namespace;
+using BenchmarkDotNet.Attributes;
+using BenchmarkDotNet.Running;
 
-public class Programm
+public class BenchProgram
 {
+    // dotnet run -c Release --project BenchTest -- --filter *
+    // add "--job short" for a quick (less precise) run.
+    public static void Main(string[] args) =>
+        BenchmarkSwitcher.FromAssembly(typeof(BenchProgram).Assembly).Run(args);
+}
 
-    public static void Main()
-    {
-        List<byte[]> datab = new();
-        FullFill(datab);
-        List<string> datas = new() { };
-        FullFill(datas);
-        var result = Timeit(Base58Encode, datab);
-        Console.WriteLine($"Base 58 encoding: {result}");
-        result = Timeit(Base64Encode, datab);
-        Console.WriteLine($"Base 64 encoding {result}");
-        result = Timeit(Base58Decode, datas);
-        Console.WriteLine($"Base 58 decoding {result}");
-        result = Timeit(Base64Decode, datas);
-        Console.WriteLine($"Base 64 decoding {result}");
-    }
+[MemoryDiagnoser]
+public class Base58Benchmarks
+{
+    [Params(8, 32, 128)]
+    public int Size;
 
-    public static void FullFill(List<byte[]> datab)
+    private byte[] _bytes = Array.Empty<byte>();
+    private string _text = string.Empty;
+
+    [GlobalSetup]
+    public void Setup()
     {
-        Random random = new Random();
-        for (int i = 0; i < 130; i++)
+        Random random = new Random(42);
+        _bytes = new byte[Size];
+        random.NextBytes(_bytes);
+        _text = base58Token.Encode(_bytes);
+
+        // A round trip has to give the input back, otherwise the timings measure broken work.
+        if (!base58Token.Decode(_text).SequenceEqual(_bytes))
         {
-            byte[] byteArray = new byte[random.Next(5, 10)];
-            random.NextBytes(byteArray);
-            datab.Add(byteArray);
+            throw new InvalidOperationException($"round trip mismatch for {_text}");
         }
     }
 
-    public static void FullFill(List<string> data)
-    {
-        Random random = new Random();
-        for (int i = 0; i < 130; i++)
-        {
-            byte[] byteArray = new byte[random.Next(5, 10)];
-            random.NextBytes(byteArray);
-            string base64String = Convert.ToBase64String(byteArray);
-            data.Add(base64String);
-        }
-    }
+    [Benchmark]
+    public string Encode() => base58Token.Encode(_bytes);
 
-    public static double Timeit<T>(Action<T> func, T args)
-    {
-        var watch = Stopwatch.StartNew();
-        func(args);
-        watch.Stop();
-        return watch.Elapsed.TotalNanoseconds;
-    }
-
-    public static void Base58Encode(List<byte[]> values)
-    {
-        foreach (var i in values)
-        {
-            base58Token.Encode(i);
-        }
-    }
-
-    public static void Base64Encode(List<byte[]> values)
-    {
-        foreach (var i in values)
-        {
-            Convert.ToBase64String(i);
-        }
-    }
-
-    public static void Base58Decode(List<string> values)
-    {
-        foreach (var i in values)
-        {
-            base58Token.Decode(i);
-        }
-    }
-
-    public static void Base64Decode(List<string> values)
-    {
-        foreach (var i in values)
-        {
-            Convert.FromBase64String(i);
-        }
-    }
+    [Benchmark]
+    public byte[] Decode() => base58Token.Decode(_text);
 }

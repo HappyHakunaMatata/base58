@@ -64,7 +64,7 @@ namespace base58namespace
 
         public static string Encode(byte[] bytes)
         {
-            BigInteger x = new BigInteger(bytes, isBigEndian: true);
+            BigInteger x = new BigInteger(bytes, isUnsigned: true, isBigEndian: true);
             List<byte> answer = new List<byte>();
             BigInteger mod = new BigInteger();
             while (x.Sign > 0)
@@ -75,7 +75,6 @@ namespace base58namespace
                     nint m = (nint)mod;
                     while (m > 0)
                     {
-
                         answer.Add((byte)alphabet[(int)(m % 58)]);
                         m /= 58;
                     }
@@ -90,9 +89,9 @@ namespace base58namespace
                     }
                 }
             }
-            foreach (byte b in bytes)
+            for (var i = 0; i < bytes.Length; i++)
             {
-                if (b != 0)
+                if (bytes[i] != 0)
                 {
                     break;
                 }

@@ -10,4 +10,8 @@
   <ItemGroup>
     <ProjectReference Include="..\base58\base58.csproj" />
   </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="BenchmarkDotNet" Version="0.15.8" />
+  </ItemGroup>
 </Project>
