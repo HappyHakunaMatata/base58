@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Numerics;
+using System.Runtime.InteropServices;
 using System.Text;
 
 namespace base58namespace
@@ -98,14 +99,14 @@ namespace base58namespace
                 answer.Add((byte)AlphabetIdx0);
             }
             answer.Reverse();
-            return Encoding.UTF8.GetString(answer.ToArray());
+            return Encoding.UTF8.GetString(CollectionsMarshal.AsSpan(answer));
         }
 
         public static byte[] Decode(string b)
         {
             var answer = BigInteger.Zero;
             BigInteger scratch;
-            char[] t = b.ToCharArray();
+            ReadOnlySpan<char> t = b.AsSpan();
             while (t.Length > 0)
             {
                 int n = t.Length;
@@ -127,11 +128,21 @@ namespace base58namespace
                 answer *= bigRadix[n];
                 scratch = new BigInteger(total);
                 answer = BigInteger.Add(answer, scratch);
-                t = t.Skip(n).ToArray();
+                t = t[n..];
             }
 
-            var tmpval = answer.ToByteArray(isBigEndian: true).SkipWhile((value, index) => value == 0 && index == 0).ToArray();
-            
+            // isUnsigned leaves out the sign byte, so there is no leading zero to strip.
+            int byteCount = answer.IsZero ? 0 : answer.GetByteCount(isUnsigned: true);
+            Span<byte> scratch2 = stackalloc byte[256];
+            if (byteCount > scratch2.Length)
+            {
+                scratch2 = new byte[byteCount];
+            }
+            Span<byte> tmpval = scratch2.Slice(0, byteCount);
+            if (byteCount > 0)
+            {
+                answer.TryWriteBytes(tmpval, out _, isUnsigned: true, isBigEndian: true);
+            }
 
             int numZeros = 0;
             while (numZeros < b.Length)
@@ -141,13 +152,10 @@ namespace base58namespace
                     break;
                 }
                 numZeros += 1;
-                
             }
-            
-            var flen = numZeros + tmpval.Length;
-            byte[] val = new byte[flen];
-            
-            Array.Copy(tmpval, 0, val, numZeros, tmpval.Length);
+
+            byte[] val = new byte[numZeros + tmpval.Length];
+            tmpval.CopyTo(val.AsSpan(numZeros));
             return val;
         }
     }
