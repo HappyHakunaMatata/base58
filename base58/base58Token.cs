@@ -90,10 +90,7 @@ namespace base58namespace
             }
             for (var i = 0; i < bytes.Length; i++)
             {
-                if (bytes[i] != 0)
-                {
-                    break;
-                }
+                if (bytes[i] != 0) break;
                 answer.Add((byte)AlphabetIdx0);
             }
             answer.Reverse();
@@ -108,18 +105,13 @@ namespace base58namespace
             while (t.Length > 0)
             {
                 int n = t.Length;
-                if (n > 10)
-                {
-                    n = 10;
-                }
+                if (n > 10) n = 10;
+               
                 nuint total = 0;
                 for (var k = 0; k < n; k++)
                 {
                     var tmp = b58[t[k]];
-                    if (tmp == 255)
-                    {
-                        return [];
-                    }
+                    if (tmp == 255) return [];
                     total = total * 58 + (nuint)tmp;
                 }
                 answer *= bigRadix[n];
@@ -130,16 +122,9 @@ namespace base58namespace
 
             
             int byteCount = answer.IsZero ? 0 : answer.GetByteCount(isUnsigned: true);
-            Span<byte> scratch2 = stackalloc byte[256];
-            if (byteCount > scratch2.Length)
-            {
-                scratch2 = new byte[byteCount];
-            }
-            Span<byte> tmpval = scratch2[..byteCount];
-            if (byteCount > 0)
-            {
-                answer.TryWriteBytes(tmpval, out _, isUnsigned: true, isBigEndian: true);
-            }
+            Span<byte> tmpval = byteCount <= 256 ? stackalloc byte[byteCount] : new byte[byteCount];
+            if (byteCount > 0) answer.TryWriteBytes(tmpval, out _, isUnsigned: true, isBigEndian: true);
+           
 
             int numZeros = 0;
             while (numZeros < b.Length)
