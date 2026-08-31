@@ -8,21 +8,13 @@ public static class Base58Token
     public static readonly BigInteger BigRadix10 = new(430804206899405824);
     public static readonly char AlphabetIdx0 = '1';
 
-    private static readonly BigInteger[] bigRadix =
-    [
-        0,
-            58,
-            3364,              //BigInteger.Pow(58, 2)
-            195112,            //BigInteger.Pow(58, 3)
-            11316496,          //BigInteger.Pow(58, 4)
-            656356768,         //BigInteger.Pow(58, 5)
-            38068692544,       //BigInteger.Pow(58, 6)
-            2207984167552,     //BigInteger.Pow(58, 7)
-            128063081718016,   //BigInteger.Pow(58, 8)
-            7427658739644928,  //BigInteger.Pow(58, 9)
-            430804206899405824 //BigInteger.Pow(58, 10)
-    ];
+   
+    private const uint Radix5 = 656356768;
 
+    private static ReadOnlySpan<uint> Radix => [1, 58, 3364, 195112, 11316496, 656356768];
+
+    private const int MaxStackLimbs = 160;
+    private const int MaxStackChars = 768;
    
     private static ReadOnlySpan<byte> B58 =>
     [
@@ -62,17 +54,41 @@ public static class Base58Token
 
     public static string Encode(byte[] bytes)
     {
-        BigInteger x = new(bytes, isUnsigned: true, isBigEndian: true);
+        int zeros = 0;
+        while (zeros < bytes.Length && bytes[zeros] == 0) zeros++;
+        ReadOnlySpan<byte> body = bytes.AsSpan(zeros);
+
+        int limbCount = (body.Length + 3) / 4;
+        Span<uint> limbs = limbCount <= MaxStackLimbs ? stackalloc uint[limbCount] : new uint[limbCount];
+        for (int li = limbCount - 1, bi = body.Length; li >= 0; li--)
+        {
+            int take = Math.Min(4, bi);
+            uint v = 0;
+            for (int k = bi - take; k < bi; k++) v = (v << 8) | body[k];
+            limbs[li] = v;
+            bi -= take;
+        }
+
         int size = bytes.Length * 138 / 100 + 1;
-        Span<char> answer = size <= 256 ? stackalloc char[size] : new char[size];
+        Span<char> answer = size <= MaxStackChars ? stackalloc char[size] : new char[size];
         int pos = size;
 
-        while (x.Sign > 0)
+       
+        int first = 0;
+        while (first < limbCount)
         {
-            x = BigInteger.DivRem(x, BigRadix10, out BigInteger mod);
-            if (x.Sign == 0)
+            ulong rem = 0;
+            for (int i = first; i < limbCount; i++)
             {
-                nint m = (nint)mod;
+                ulong cur = (rem << 32) | limbs[i];
+                limbs[i] = (uint)(cur / Radix5);
+                rem = cur % Radix5;
+            }
+            while (first < limbCount && limbs[first] == 0) first++;
+
+            uint m = (uint)rem;
+            if (first == limbCount)
+            {
                 while (m > 0)
                 {
                     answer[--pos] = Alphabet[(int)(m % 58)];
@@ -81,60 +97,70 @@ public static class Base58Token
             }
             else
             {
-                nint m = (nint)mod;
-                for (int i = 0; i < 10; i++)
+                for (int i = 0; i < 5; i++)
                 {
                     answer[--pos] = Alphabet[(int)(m % 58)];
                     m /= 58;
                 }
             }
         }
-        for (var i = 0; i < bytes.Length; i++)
-        {
-            if (bytes[i] != 0) break;
-            answer[--pos] = AlphabetIdx0;
-        }
+
+        for (int i = 0; i < zeros; i++) answer[--pos] = AlphabetIdx0;
         return new string(answer[pos..]);
     }
 
     public static byte[] Decode(string b)
     {
-        var answer = BigInteger.Zero;
-        BigInteger scratch;
-        ReadOnlySpan<char> t = b.AsSpan();
-        while (t.Length > 0)
-        {
-            int n = t.Length;
-            if (n > 10) n = 10;
-
-            nuint total = 0;
-            for (var k = 0; k < n; k++)
-            {
-                var tmp = B58[t[k]];
-                if (tmp == 255) return [];
-                total = total * 58 + (nuint)tmp;
-            }
-            answer *= bigRadix[n];
-            scratch = new BigInteger(total);
-            answer = BigInteger.Add(answer, scratch);
-            t = t[n..];
-        }
-
-
-        int byteCount = answer.IsZero ? 0 : answer.GetByteCount(isUnsigned: true);
-        Span<byte> tmpval = byteCount <= 256 ? stackalloc byte[byteCount] : new byte[byteCount];
-        if (byteCount > 0) answer.TryWriteBytes(tmpval, out _, isUnsigned: true, isBigEndian: true);
-
-
         int numZeros = 0;
-        while (numZeros < b.Length)
+        while (numZeros < b.Length && b[numZeros] == AlphabetIdx0) numZeros++;
+        ReadOnlySpan<char> body = b.AsSpan(numZeros);
+
+        int maxBytes = body.Length * 733 / 1000 + 1;
+        int limbCap = (maxBytes + 3) / 4;
+       
+        Span<uint> limbs = limbCap <= MaxStackLimbs ? stackalloc uint[limbCap] : new uint[limbCap];
+        int used = 0;
+
+        while (body.Length > 0)
         {
-            if (b[numZeros] != AlphabetIdx0) break;
-            numZeros += 1;
+            int n = Math.Min(5, body.Length);
+            uint total = 0;
+            for (int k = 0; k < n; k++)
+            {
+                char c = body[k];
+                byte digit = c < 256 ? B58[c] : (byte)255;
+                if (digit == 255) return [];
+                total = total * 58 + digit;
+            }
+
+           
+            ulong carry = total;
+            uint radix = Radix[n];
+            for (int i = 0; i < used; i++)
+            {
+                ulong cur = (ulong)limbs[i] * radix + carry;
+                limbs[i] = (uint)cur;
+                carry = cur >> 32;
+            }
+            if (carry > 0) limbs[used++] = (uint)carry;
+
+            body = body[n..];
         }
 
-        byte[] val = new byte[numZeros + tmpval.Length];
-        tmpval.CopyTo(val.AsSpan(numZeros));
+        int byteCount = 0;
+        if (used > 0)
+        {
+            uint top = limbs[used - 1];
+            int topBytes = 4;
+            while (topBytes > 1 && (top >> ((topBytes - 1) * 8)) == 0) topBytes--;
+            byteCount = (used - 1) * 4 + topBytes;
+        }
+
+        byte[] val = new byte[numZeros + byteCount];
+        for (int i = 0; i < byteCount; i++)
+        {
+            val[val.Length - 1 - i] = (byte)(limbs[i >> 2] >> ((i & 3) * 8));
+        }
         return val;
     }
 }
