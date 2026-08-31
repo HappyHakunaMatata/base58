@@ -1,7 +1,8 @@
-using System.Numerics;
+﻿using System.Numerics;
 using System.Text;
 using Base58namespace;
 using BenchmarkDotNet.Attributes;
+using BenchmarkDotNet.Configs;
 using BenchmarkDotNet.Running;
 
 public class BenchProgram
@@ -12,7 +13,11 @@ public class BenchProgram
         BenchmarkSwitcher.FromAssembly(typeof(BenchProgram).Assembly).Run(args);
 }
 
+// Base58Token against SimpleBase (https://github.com/ssg/SimpleBase), whose Base58.Bitcoin
+// uses the same alphabet and the same leading-zero rule, so the two are directly comparable.
 [MemoryDiagnoser]
+[GroupBenchmarksBy(BenchmarkLogicalGroupRule.ByCategory)]
+[CategoriesColumn]
 public class Base58Benchmarks
 {
     [Params(8, 32, 128)]
@@ -34,13 +39,42 @@ public class Base58Benchmarks
         {
             throw new InvalidOperationException($"round trip mismatch for {_text}");
         }
+
+        // The two implementations must agree before their timings mean anything. Leading zero
+        // bytes get their own check because that is where base58 implementations disagree.
+        for (int zeros = 0; zeros <= Math.Min(4, Size); zeros++)
+        {
+            byte[] probe = (byte[])_bytes.Clone();
+            for (int i = 0; i < zeros; i++)
+            {
+                probe[i] = 0;
+            }
+
+            string mine = Base58Token.Encode(probe);
+            string theirs = SimpleBase.Base58.Bitcoin.Encode(probe);
+            if (mine != theirs)
+            {
+                throw new InvalidOperationException($"encode mismatch: {mine} / {theirs}");
+            }
+
+            if (!Base58Token.Decode(mine).SequenceEqual(SimpleBase.Base58.Bitcoin.Decode(mine)))
+            {
+                throw new InvalidOperationException($"decode mismatch for {mine}");
+            }
+        }
     }
 
-    [Benchmark]
+    [Benchmark(Baseline = true), BenchmarkCategory("Encode")]
     public string Encode() => Base58Token.Encode(_bytes);
 
-    [Benchmark]
+    [Benchmark, BenchmarkCategory("Encode")]
+    public string EncodeSimpleBase() => SimpleBase.Base58.Bitcoin.Encode(_bytes);
+
+    [Benchmark(Baseline = true), BenchmarkCategory("Decode")]
     public byte[] Decode() => Base58Token.Decode(_text);
+
+    [Benchmark, BenchmarkCategory("Decode")]
+    public byte[] DecodeSimpleBase() => SimpleBase.Base58.Bitcoin.Decode(_text);
 }
 
 // Base58Token.Encode (stack buffer of chars, filled back to front) against the two
@@ -103,7 +137,7 @@ public class EncodeVariants
                 nint m = (nint)mod;
                 while (m > 0)
                 {
-                    answer.Add((byte)Base58Token.alphabet[(int)(m % 58)]);
+                    answer.Add((byte)Base58Token.Alphabet[(int)(m % 58)]);
                     m /= 58;
                 }
             }
@@ -112,7 +146,7 @@ public class EncodeVariants
                 nint m = (nint)mod;
                 for (int i = 0; i < 10; i++)
                 {
-                    answer.Add((byte)Base58Token.alphabet[(int)(m % 58)]);
+                    answer.Add((byte)Base58Token.Alphabet[(int)(m % 58)]);
                     m /= 58;
                 }
             }
@@ -144,7 +178,7 @@ public class EncodeVariants
                 nint m = (nint)mod;
                 while (m > 0)
                 {
-                    answer.AddFirst((byte)Base58Token.alphabet[(int)(m % 58)]);
+                    answer.AddFirst((byte)Base58Token.Alphabet[(int)(m % 58)]);
                     m /= 58;
                 }
             }
@@ -153,7 +187,7 @@ public class EncodeVariants
                 nint m = (nint)mod;
                 for (int i = 0; i < 10; i++)
                 {
-                    answer.AddFirst((byte)Base58Token.alphabet[(int)(m % 58)]);
+                    answer.AddFirst((byte)Base58Token.Alphabet[(int)(m % 58)]);
                     m /= 58;
                 }
             }
